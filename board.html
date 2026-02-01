@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookedup Marketing Board</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .board {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            padding-bottom: 20px;
+            min-height: 70vh;
+        }
+        
+        .column {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            min-width: 300px;
+            max-width: 350px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            max-height: 80vh;
+        }
+        
+        .column-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .column-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .column-count {
+            background: #e0e0e0;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .task-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .task {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            cursor: grab;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+        
+        .task:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+        
+        .task.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+        
+        .task-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .task-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .task-owner {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .task-priority {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .priority-high {
+            background: #fee;
+            color: #c33;
+        }
+        
+        .priority-medium {
+            background: #ffeaa7;
+            color: #b7791f;
+        }
+        
+        .priority-low {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .add-task-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: transform 0.2s;
+        }
+        
+        .add-task-btn:hover {
+            transform: scale(1.02);
+        }
+        
+        .column.drag-over {
+            background: rgba(255, 255, 255, 1);
+            border: 2px dashed #667eea;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .modal h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .modal-buttons button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #555;
+        }
+        
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .stat {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            padding: 15px 25px;
+            border-radius: 12px;
+            color: white;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 5px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        
+        .delete-btn:hover {
+            background: #fee;
+            color: #c33;
+        }
+        
+        @media (max-width: 768px) {
+            .board {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .column {
+                width: 100%;
+                max-width: 100%;
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎯 Bookedup Marketing Board</h1>
+        <p>Managed by Milo • Last updated: <span id="last-updated">Just now</span></p>
+    </div>
+    
+    <div class="stats-bar">
+        <div class="stat">
+            <div class="stat-number" id="total-tasks">0</div>
+            <div class="stat-label">Total Tasks</div>
+        </div>
+        <div class="stat">
+            <div class="stat-number" id="done-tasks">0</div>
+            <div class="stat-label">Completed</div>
+        </div>
+        <div class="stat">
+            <div class="stat-number" id="progress-percent">0%</div>
+            <div class="stat-label">Progress</div>
+        </div>
+    </div>
+    
+    <div class="board" id="board">
+        <div class="column" data-column="backlog">
+            <div class="column-header">
+                <div class="column-title">📥 Backlog</div>
+                <span class="column-count">0</span>
+            </div>
+            <div class="task-list" id="backlog"></div>
+            <button class="add-task-btn" onclick="openModal('backlog')">+ Add Task</button>
+        </div>
+        
+        <div class="column" data-column="todo">
+            <div class="column-header">
+                <div class="column-title">🎯 To Do</div>
+                <span class="column-count">0</span>
+            </div>
+            <div class="task-list" id="todo"></div>
+            <button class="add-task-btn" onclick="openModal('todo')">+ Add Task</button>
+        </div>
+        
+        <div class="column" data-column="inprogress">
+            <div class="column-header">
+                <div class="column-title">🏃 In Progress</div>
+                <span class="column-count">0</span>
+            </div>
+            <div class="task-list" id="inprogress"></div>
+            <button class="add-task-btn" onclick="openModal('inprogress')">+ Add Task</button>
+        </div>
+        
+        <div class="column" data-column="review">
+            <div class="column-header">
+                <div class="column-title">👀 Review</div>
+                <span class="column-count">0</span>
+            </div>
+            <div class="task-list" id="review"></div>
+            <button class="add-task-btn" onclick="openModal('review')">+ Add Task</button>
+        </div>
+        
+        <div class="column" data-column="done">
+            <div class="column-header">
+                <div class="column-title">✅ Done</div>
+                <span class="column-count">0</span>
+            </div>
+            <div class="task-list" id="done"></div>
+            <button class="add-task-btn" onclick="openModal('done')">+ Add Task</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="taskModal">
+        <div class="modal-content">
+            <h2>Add New Task</h2>
+            <div class="form-group">
+                <label>Task Title</label>
+                <input type="text" id="taskTitle" placeholder="Enter task name...">
+            </div>
+            <div class="form-group">
+                <label>Owner</label>
+                <select id="taskOwner">
+                    <option value="Milo">Milo 🤖</option>
+                    <option value="Tom">Tom 👤</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Priority</label>
+                <select id="taskPriority">
+                    <option value="high">🔥 High</option>
+                    <option value="medium">⚡ Medium</option>
+                    <option value="low">💤 Low</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Notes (optional)</label>
+                <textarea id="taskNotes" rows="3" placeholder="Any details..."></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn-primary" onclick="saveTask()">Add Task</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let tasks = [
+            { id: 1, title: "Create demo video for landing page", owner: "Milo", priority: "high", column: "backlog", notes: "60-90 seconds showing missed call → auto text → booking" },
+            { id: 2, title: "Design email signature for Tom", owner: "Milo", priority: "medium", column: "backlog", notes: "Professional, includes Bookedup branding" },
+            { id: 3, title: "Research supply house partnerships", owner: "Milo", priority: "medium", column: "backlog", notes: "Local distributors, co-marketing opportunities" },
+            { id: 4, title: "Set up Pipedrive account", owner: "Tom", priority: "high", column: "todo", notes: "Free trial at pipedrive.com" },
+            { id: 5, title: "Install Hunter.io Chrome extension", owner: "Tom", priority: "high", column: "todo", notes: "For finding emails" },
+            { id: 6, title: "Find 50 contractor prospects", owner: "Milo", priority: "high", column: "todo", notes: "Google Maps + Yelp research" },
+            { id: 7, title: "Join 3-5 local contractor Facebook groups", owner: "Tom", priority: "medium", column: "todo", notes: "Search [City] Contractors" },
+            { id: 8, title: "Create Bookedup LinkedIn company page", owner: "Tom", priority: "medium", column: "todo", notes: "For credibility" },
+            { id: 9, title: "Build marketing repo & outreach templates", owner: "Milo", priority: "high", column: "inprogress", notes: "✅ Complete" },
+            { id: 10, title: "Install marketing skills (Pipedrive, LinkedIn)", owner: "Milo", priority: "high", column: "inprogress", notes: "✅ Complete" },
+            { id: 11, title: "Create GitHub account for Milo", owner: "Milo", priority: "high", column: "inprogress", notes: "✅ Complete" },
+            { id: 12, title: "Review outreach email templates", owner: "Tom", priority: "medium", column: "review", notes: "In outreach-strategy.md" },
+            { id: 13, title: "Approve target market focus", owner: "Tom", priority: "medium", column: "review", notes: "Which trades first?" },
+            { id: 14, title: "Create GitHub repo for marketing", owner: "Milo", priority: "high", column: "done", notes: "https://github.com/milomanbuilds/bookedup-marketing" },
+            { id: 15, title: "Install Pipedrive skill", owner: "Milo", priority: "high", column: "done", notes: "Ready to use" },
+            { id: 16, title: "Install LinkedIn skill", owner: "Milo", priority: "high", column: "done", notes: "Ready to use" },
+            { id: 17, title: "Install Email Best Practices skill", owner: "Milo", priority: "high", column: "done", notes: "Ready to use" },
+            { id: 18, title: "Create 3-email outreach sequence", owner: "Milo", priority: "high", column: "done", notes: "Saved in repo" },
+            { id: 19, title: "Create target list template", owner: "Milo", priority: "high", column: "done", notes: "Saved in repo" },
+            { id: 20, title: "Connect Telegram", owner: "Milo", priority: "high", column: "done", notes: "Working!" }
+        ];
+
+        let currentColumn = '';
+        let draggedTask = null;
+
+        function renderTasks() {
+            const columns = ['backlog', 'todo', 'inprogress', 'review', 'done'];
+            
+            columns.forEach(column => {
+                const container = document.getElementById(column);
+                const columnTasks = tasks.filter(t => t.column === column);
+                
+                container.innerHTML = columnTasks.map(task => `
+                    <div class="task" draggable="true" data-id="${task.id}">
+                        <div class="task-title">${task.title}</div>
+                        <div class="task-meta">
+                            <span class="task-owner">${task.owner === 'Milo' ? '🤖' : '👤'} ${task.owner}</span>
+                            <span class="task-priority priority-${task.priority}">${task.priority}</span>
+                            <button class="delete-btn" onclick="deleteTask(${task.id})">×</button>
+                        </div>
+                        ${task.notes ? `<div style="margin-top: 8px; font-size: 0.8rem; color: #666;">${task.notes}</div>` : ''}
+                    </div>
+                `).join('');
+                
+                document.querySelector(`[data-column="${column}"] .column-count`).textContent = columnTasks.length;
+            });
+            
+            document.querySelectorAll('.task').forEach(task => {
+                task.addEventListener('dragstart', handleDragStart);
+                task.addEventListener('dragend', handleDragEnd);
+            });
+            
+            updateStats();
+        }
+
+        function updateStats() {
+            const total = tasks.length;
+            const done = tasks.filter(t => t.column === 'done').length;
+            const percent = total > 0 ? Math.round((done / total) * 100) : 0;
+            
+            document.getElementById('total-tasks').textContent = total;
+            document.getElementById('done-tasks').textContent = done;
+            document.getElementById('progress-percent').textContent = percent + '%';
+        }
+
+        function handleDragStart(e) {
+            draggedTask = tasks.find(t => t.id === parseInt(e.target.dataset.id));
+            e.target.classList.add('dragging');
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            document.querySelectorAll('.column').forEach(col => col.classList.remove('drag-over'));
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const column = e.currentTarget.dataset.column;
+            
+            if (draggedTask && column) {
+                draggedTask.column = column;
+                renderTasks();
+                saveToLocalStorage();
+            }
+            
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function openModal(column) {
+            currentColumn = column;
+            document.getElementById('taskModal').classList.add('active');
+            document.getElementById('taskTitle').focus();
+        }
+
+        function closeModal() {
+            document.getElementById('taskModal').classList.remove('active');
+            document.getElementById('taskTitle').value = '';
+            document.getElementById('taskNotes').value = '';
+        }
+
+        function saveTask() {
+            const title = document.getElementById('taskTitle').value;
+            const owner = document.getElementById('taskOwner').value;
+            const priority = document.getElementById('taskPriority').value;
+            const notes = document.getElementById('taskNotes').value;
+            
+            if (!title) return;
+            
+            const newTask = {
+                id: Date.now(),
+                title,
+                owner,
+                priority,
+                notes,
+                column: currentColumn
+            };
+            
+            tasks.push(newTask);
+            renderTasks();
+            saveToLocalStorage();
+            closeModal();
+        }
+
+        function deleteTask(id) {
+            if (confirm('Delete this task?')) {
+                tasks = tasks.filter(t => t.id !== id);
+                renderTasks();
+                saveToLocalStorage();
+            }
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('bookedup-tasks', JSON.stringify(tasks));
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('bookedup-tasks');
+            if (saved) {
+                tasks = JSON.parse(saved);
+            }
+        }
+
+        document.querySelectorAll('.column').forEach(column => {
+            column.addEventListener('dragover', handleDragOver);
+            column.addEventListener('dragleave', handleDragLeave);
+            column.addEventListener('drop', handleDrop);
+        });
+
+        document.getElementById('taskModal').addEventListener('click', (e) => {
+            if (e.target.id === 'taskModal') closeModal();
+        });
+
+        document.getElementById('taskTitle').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') saveTask();
+        });
+
+        loadFromLocalStorage();
+        renderTasks();
+        document.getElementById('last-updated').textContent = new Date().toLocaleString();
+    </script>
+</body>
+</html>
